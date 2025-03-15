@@ -32,7 +32,7 @@ Tip: Consider using a virtual environment to keep your setup clean and organized
 Ready to train EuroBERT? Launch a training session with default settings using this command (just tweak the data_mix_path to match your setup):
 
 ```bash
-python main.py python main.py --model_name eurobert --model_size 210m --data_mix_path "./exemples/mix" --batch_size 2 --mlm_probability 0.5 --mask_probability 1    
+python main.py python main.py --model_name eurobert --model_size 210m --data_mix_path "./exemples/mix" --batch_size 2 --mlm_probability 0.5 --mask_probability 1   
 ```
 
 Note: This is an example—adjust the values based on your needs for optimal results!

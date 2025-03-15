@@ -11,8 +11,8 @@ class ModelConfig:
     gpu: bool = True
 
     # Model parameters
-    model_name: str = "bert"
-    model_size: str | None = "3b"
+    model_name: str = "eurobert"
+    model_size: str | None = "210m"
 
     # If parameters are not provided, default values of the model size are used.
     vocab_size: int | None = 128256  # Vocabulary size
