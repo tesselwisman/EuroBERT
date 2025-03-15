@@ -5,9 +5,9 @@ Hello and thank you for your interest in the EuroBERT training library!
 I am currently on a well-deserved vacation, but I’m excited to share that the code base will be released between **March 10 and 14**. This training library was used to train **EuroBERT** and is agnostic to GPU manufacturer (works with both AMD and NVIDIA GPUs).
 
 ### For more information, please see:
-- **Paper:** [Link]
+- **Paper:** [Link](https://arxiv.org/abs/2503.05500)
 - **Model weights:** [[Link](https://huggingface.co/EuroBERT)]
-- **HuggingFace Blog:** [Link]
+- **HuggingFace Blog:** [Link](https://huggingface.co/blog/EuroBERT/release)
 
 Otherwise, feel free to send me an email or a Twitter private message if you have any questions.
 
