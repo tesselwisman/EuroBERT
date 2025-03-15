@@ -1,0 +1,34 @@
+from dataclasses import dataclass
+
+
+@dataclass
+class ModelConfig:
+    huggingface_id: str = (
+        None  # Huggingface model id (if provided, other model parameters are ignored)
+    )
+    tokenizer_path_or_name: str = "meta-llama/Meta-Llama-3-8B-Instruct"
+    mask_token_id: int = 128002
+    gpu: bool = True
+
+    # Model parameters
+    model_name: str = "bert"
+    model_size: str | None = "3b"
+
+    # If parameters are not provided, default values of the model size are used.
+    vocab_size: int | None = 128256  # Vocabulary size
+    embedding_size: int | None = None  # Embedding size
+    num_head: int | None = None  # Number of heads
+    num_kv_head: int | None = None  # Number of key-value heads
+    num_layer: int | None = None  # Number of layers
+    block_size: int | None = None  # Block size
+    dropout: int | None = None  # Dropout
+    mlp_hidden_dim: int | None = None  # MLP hidden dimension
+    bias: bool | None = None  # Bias
+    attn_impl: str | None = None  # Attention implementation
+    rope_base: int | None = None  # Rope base
+
+    fused_rms_norm: bool = False  # Fused RMS norm
+    fused_rope: bool = False  # Fused rope
+    fused_swiglu: bool = False  # Fused swiglu
+    fused_cross_entropy: bool = False  # Fused cross entropy
+    fused_linear_cross_entropy: bool = False  # Fused linear cross entropy
