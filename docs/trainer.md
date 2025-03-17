@@ -12,8 +12,6 @@ Whether you're a beginner or an expert, let's get started!
   - 🏋️ [Training Configuration](#training-configuration)
   - 📊 [Data Configuration](#data-configuration)
   - 🤖 [Model Configuration](#model-configuration)
-- 📜 [**License & Citation**](#license--citation)
-
 
 ## 🚀 **Quick Start**
 
