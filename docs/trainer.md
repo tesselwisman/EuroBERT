@@ -7,7 +7,6 @@ Optimus is designed to allow **resumable training**, whether you're using the sa
 Whether you're a beginner or an expert, let's get started!
 
 ## 📑 **Table of Contents**
-- 🛠️ [**Installation**](#installation)
 - 🚀 [**Quick Start**](#quick-start)
 - ⚙️ [**Configuration**](#configuration)
   - 🏋️ [Training Configuration](#training-configuration)
@@ -15,15 +14,6 @@ Whether you're a beginner or an expert, let's get started!
   - 🤖 [Model Configuration](#model-configuration)
 - 📜 [**License & Citation**](#license--citation)
 
-## 🛠️ **Installation**
-
-To get started, ensure you have **Python 3.x** installed on your system. Then, install the necessary dependencies with this command:
-
-```bash
-pip install -r requirements.txt
-```
-
-Tip: Consider using a virtual environment to keep your setup clean and organized!
 
 ## 🚀 **Quick Start**
 
