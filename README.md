@@ -2,7 +2,7 @@
 
 ![EuroBERT](docs/images/bg.png)
 [![arXiv](https://img.shields.io/badge/arXiv-2503.05500-b31b1b.svg?style=for-the-badge)](https://arxiv.org/abs/2503.05500)
-[![Hugging Face](https://img.shields.io/badge/Hugging_Face-EuroBERT_Models-F8D44E?style=for-the-badge&logo=huggingface)](https://huggingface.co/blog/EuroBERT)
+[![Hugging Face](https://img.shields.io/badge/Hugging_Face-EuroBERT_Models-F8D44E?style=for-the-badge&logo=huggingface)](https://huggingface.co/EuroBERT)
 [![Blog Post](https://img.shields.io/badge/Blog_Post-018EF5?logo=readme&logoColor=fff&style=for-the-badge)](https://huggingface.co/blog/EuroBERT/release)
 
 ## Introduction
