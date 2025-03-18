@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "optimus"
 version = "0.9"
@@ -12,7 +16,6 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent"
 ]
-
 dependencies = [
   "einops==0.8.1",
   "fire==0.6.0",
