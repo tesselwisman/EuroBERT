@@ -2,18 +2,32 @@
 name = "optimus"
 version = "0.9"
 authors = [
-  { name="Nicolas Boizard", email="nicolas.bzrd@gmail.com" },
-  { name="Duarte Alves", email="duartemalves@tecnico.ulisboa.pt" },
+  { name = "Nicolas Boizard", email = "nicolas.bzrd@gmail.com" },
+  { name = "Duarte Alves", email = "duartemalves@tecnico.ulisboa.pt" }
 ]
-description = "Lybrary to train encoder models, written in Python using pytorch and compatible with all GPUs."
+description = "Library to train encoder models, written in Python using PyTorch and compatible with all GPUs."
 readme = "README.md"
 requires-python = ">=3.11.0"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent"
 ]
 
 dependencies = [
+  "einops==0.8.1",
+  "fire==0.6.0",
+  "flash_attn==2.7.4.post1",
+  "ijson==3.3.0",
+  "liger_kernel==0.5.5",
+  "mosaicml_streaming==0.7.6",
+  "numpy==2.2.4",
+  "pandas==2.2.3",
+  "pyarrow==16.0.0",
+  "python_dateutil==2.9.0.post0",
+  "tiktoken==0.7.0",
+  "torch==2.4.1",
+  "transformers==4.48.0.dev0",
+  "zstandard==0.23.0"
 ]
 
 [project.urls]
