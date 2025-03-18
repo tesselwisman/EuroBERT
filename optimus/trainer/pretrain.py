@@ -136,10 +136,14 @@ class Pretrain:
 
                 with no_sync:
                     with autocast:
-                        _, loss = self.model(
-                            **batch,
-                            cache=self.cache,
-                        )
+                        if self.config.model.huggingface_id:
+                            batch = {
+                                key: value.to(device=self.model.device)
+                                for key, value in batch.items()
+                            }
+                            loss, _ = self.model(**batch)
+                        else:
+                            _, loss = self.model(**batch, cache=self.cache)
                         loss = loss / self.config.train.gradient_accumulation_steps
                     loss.backward()
                 total_loss += loss.detach().item()

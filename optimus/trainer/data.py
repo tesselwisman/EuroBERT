@@ -24,6 +24,7 @@ class Data:
         self.system_config = config.system
         self.main_process = config.is_main_process
         self.tokenizer = tokenizer
+        self.hf_model = config.model.huggingface_id is not None
 
         assert (
             config.train.mask_probability
@@ -141,7 +142,10 @@ class Data:
         batch = np.array(batch)
         inputs = torch.tensor(batch[:, 0], dtype=torch.long)
         labels = torch.tensor(batch[:, 1], dtype=torch.long)
-        return {"x": inputs, "labels": labels}
+        return {
+            "input_ids" if self.hf_model else "x": inputs,
+            "labels": labels,
+        }
 
     def to_torch_collate_var_len_fn(self, batch):
         """
@@ -172,7 +176,7 @@ class Data:
         )
 
         return {
-            "x": inputs,
+            "input_ids" if self.hf_model else "x": inputs,
             "labels": labels,
             "cu_seq_lens": cu_seq_lens,
             "max_seqlen": lengths.max().item(),

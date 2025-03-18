@@ -87,7 +87,7 @@ def load_model(config: Config):
             model = EuroBERT(dict_config_model)
         else:
             raise ValueError(f"Model name {config.model.model_name} is not supported.")
-    config.update_config(**dict_config_model)
+        config.update_config(**dict_config_model)
 
     # Move model to GPU if available
     if torch.cuda.is_available() and config.model.gpu:

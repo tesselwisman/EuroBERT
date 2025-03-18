@@ -105,6 +105,27 @@ class TransformerEncoder(nn.Module):
             return h, loss
 
 
+####################################
+### Transformer Embedding Module ###
+####################################
+
+
+class CustomEmbedding(torch.nn.Module):
+    """This custom embedding class replaces the torch.nn.Embedding class, which has
+    compilation issues."""
+
+    def __init__(self, vocab_size, embed_dim):
+        super().__init__()
+        self.weight = torch.nn.Parameter(torch.empty(vocab_size, embed_dim))
+        self.reset_parameters()
+
+    def forward(self, input_ids):
+        return self.weight[input_ids, :]
+
+    def reset_parameters(self) -> None:
+        torch.nn.init.normal_(self.weight, mean=0.0, std=0.02)
+
+
 ##################################
 ### Transformer Encoder Module ###
 ##################################
