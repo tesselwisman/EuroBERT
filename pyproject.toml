@@ -5,6 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "optimus"
 version = "0.9"
+license = { text = "Apache 2.0" }
 authors = [
   { name = "Nicolas Boizard", email = "nicolas.bzrd@gmail.com" },
   { name = "Duarte Alves", email = "duartemalves@tecnico.ulisboa.pt" }
@@ -17,6 +18,7 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
+  "blobfile==3.0.0",
   "einops==0.8.1",
   "fire==0.6.0",
   "ijson==3.3.0",
@@ -25,6 +27,7 @@ dependencies = [
   "pandas==2.2.3",
   "pyarrow==16.0.0",
   "python_dateutil==2.9.0",
+  "tensorboard==2.19.0",
   "tiktoken==0.7.0",
   "torch==2.4.1",
   "transformers==4.49.0",
@@ -40,3 +43,6 @@ kernel = [
 [project.urls]
 Homepage = "https://github.com/Nicolas-BZRD/EuroBERT"
 Issues = "https://github.com/Nicolas-BZRD/EuroBERT/issues"
+
+[tool.setuptools]
+license-files = ["LICENSE.txt"]

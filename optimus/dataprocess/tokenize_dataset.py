@@ -182,7 +182,7 @@ def _worker(
     return number_tokens
 
 
-def main(
+def tokenize_dataset(
     input_dir: str,
     tokenizer: str,
     dataset: str,
@@ -194,26 +194,44 @@ def main(
     tiktoken: bool = False,
     read_files_kwargs: Optional[dict[str, Any]] = None,
 ):
+    """
+    Tokenizes a dataset using the specified tokenizer and processes it in parallel.
+
+    Args:
+        input_dir (str): Path to the input directory containing data files.
+        tokenizer (str): Tokenizer name or path to be used.
+        dataset (str): Dataset module name.
+        output_dir (str, optional): Output directory for tokenized files. Defaults to "output".
+        size_limit (Optional[int | str], optional): Size limit per file. Defaults to "64MB".
+        num_workers (int | str, optional): Number of worker processes or "max". Defaults to 1.
+        head (Optional[int], optional): Number of initial samples to process. Defaults to None.
+        timeout (Optional[int], optional): Timeout for processing. Defaults to None.
+        tiktoken (bool, optional): Whether to use TikToken. Defaults to False.
+        read_files_kwargs (Optional[dict[str, Any]], optional): Additional arguments for file reading. Defaults to None.
+    """
     start = time.time()
-    file_dir = os.path.dirname(os.path.realpath(__file__))
+
+    file_dir = os.path.dirname(os.path.abspath(__file__))
     dataset_dir = os.path.join(file_dir, "dataset")
+    assert dataset + ".py" in os.listdir(dataset_dir), f"{dataset}.py module not found."
+    dataset_module = importlib.import_module(f"optimus.dataprocess.dataset.{dataset}")
+
     read_files_kwargs = read_files_kwargs or {}
 
-    assert dataset + ".py" in os.listdir(dataset_dir), f"{dataset}.py module not found."
     assert (
-        num_workers != "max" or num_workers > 0
+        num_workers == "max" or num_workers > 0
     ), "num_workers must be greater than 0."
+    num_workers = os.cpu_count() - 1 if num_workers == "max" else num_workers
+
     assert not os.path.exists(
         output_dir
     ), f"Output directory '{output_dir}' already exists."
 
-    num_workers = os.cpu_count() - 1 if num_workers == "max" else num_workers
-
     print(
-        f"Input directory: {input_dir}\nTokenizer: {tokenizer}\nDataset: {dataset}\nSize limit: {size_limit}\nNum workers: {num_workers}\nTimeout: {timeout}"
+        f"Input directory: {input_dir}\nTokenizer: {tokenizer}\nDataset: {dataset}\n"
+        f"Size limit: {size_limit}\nNum workers: {num_workers}\nTimeout: {timeout}"
     )
 
-    dataset_module = importlib.import_module(f"dataset.{dataset}")
     inputs = dataset_module.get_files(input_dir, **read_files_kwargs)
     assert inputs, "No data files found in the input directory."
 
@@ -268,4 +286,4 @@ def main(
 
 
 if __name__ == "__main__":
-    fire.Fire(main)
+    fire.Fire(tokenize_dataset)

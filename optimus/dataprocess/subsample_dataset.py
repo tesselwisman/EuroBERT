@@ -1,10 +1,11 @@
-import argparse
+import json
 import logging
 import os
 import shutil
+
+import fire
 import numpy as np
 from streaming.base.util import merge_index
-import json
 
 logging.basicConfig(level=logging.ERROR)
 logging.getLogger("streaming.base.storage.upload").setLevel(logging.ERROR)
@@ -35,7 +36,7 @@ def manually_create_index(shard_group: list[str], sub_dir: str):
         json.dump(index, f, indent=4)
 
 
-def process_datasets(dataset_path: str, num_shards: int):
+def subsample_dataset(dataset_path: str, num_shards: int):
     """
     Process dataset to split shards into subdirectories and merge indexes.
 
@@ -92,26 +93,5 @@ def process_datasets(dataset_path: str, num_shards: int):
     logging.info("Dataset processing completed successfully.")
 
 
-def main():
-    """
-    Main function to parse arguments and process datasets.
-    """
-    parser = argparse.ArgumentParser(
-        description="Process dataset stored in a folder by splitting it into --num_shards sub-datasets."
-    )
-    parser.add_argument(
-        "--dataset_path",
-        type=str,
-        required=True,
-        help="Path where the dataset is located.",
-    )
-    parser.add_argument(
-        "--num_shards", type=int, default=5, help="Number of shards to split into."
-    )
-
-    args = parser.parse_args()
-    process_datasets(args.dataset_path, args.num_shards)
-
-
 if __name__ == "__main__":
-    main()
+    fire.Fire(subsample_dataset)
