@@ -27,7 +27,7 @@ class Config:
         self.distributed = DistributedConfig(**config.get("distributed", {}))
         self.model = ModelConfig(**config.get("model", {}))
         self.data = DatasetConfig(**config.get("data", {}))
-        self.system = SystemConfig(**config.get("system", {}))
+        self.system = SystemConfig(**{"rank": int(os.environ["LOCAL_RANK"]), "gpu_per_node": 8, "world_size": int(os.environ["WORLD_SIZE"])})
 
         self.update_config(**kwargs)
 

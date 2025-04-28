@@ -14,7 +14,8 @@ import tiktoken.load
 from dateutil import parser
 from streaming import MDSWriter
 from streaming.base.util import merge_index
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, BertTokenizerFast
+
 
 Metadata = dict[str, Any] | list[Any]
 
@@ -119,25 +120,33 @@ def _worker(
     head: Optional[int] = None,
     tiktoken: bool = False,
 ):
-    tokenizer = (
-        Llama3TiktokenTokenizer(tokenizer_path)
-        if tiktoken
-        else AutoTokenizer.from_pretrained(tokenizer_path)
-    )
-
+    if tiktoken:
+        tokenizer = Llama3TiktokenTokenizer(tokenizer_path)
+    elif tokenizer_paths.endswith("vocab.txt"):
+        tokenizer = BertTokenizerFast(tokenizer_path, cls_token="<|begin-of-text|>", sep_token="<|end-of-text|>", mask_token="<|mask|>")
+    else:
+        AutoTokenizer.from_pretrained(tokenizer_path)
+    
     def encode_fn(texts: list[str]) -> list[list[int]]:
         input_ids = (
             tokenizer.encoding.encode_ordinary_batch(texts, num_threads=16)
             if tiktoken
             else tokenizer(texts)["input_ids"]
         )
-        eos_id = tokenizer.eos_id if tiktoken else tokenizer.eos_token_id
-        return [ids + [eos_id] for ids in input_ids]
+        if tiktoken:
+            eos_id = tokenizer.eos_id
+            return [ids + [eos_id] for ids in input_ids]
+        elif tokenizer_path.endswith("vocab.txt"):
+            eos_id = tokenizer.sep_token_id
+        else:
+            eos_id = tokenizer.eos_token_id
+        return input_ids
 
     worker_id = output_dir.rstrip("/").split("/")[-1]
-    print(f"({worker_id}): Worker started.", flush=True)
+    print(f"({worker_id}): Worker started...", flush=True)
 
     data_per_file = map(get_records_fn, input_subset)
+    
     batches = itertools.chain.from_iterable(data_per_file)
 
     if head is not None:
@@ -148,7 +157,7 @@ def _worker(
         metadata = [r.get("metadata", {}) for r in batches]
         tokens = encode_fn(texts)
         return ({"tokens": t, "metadata": m} for t, m in zip(tokens, metadata))
-
+    
     tokenized_batches = map(_tokenize, batches)
     tokenized = itertools.chain.from_iterable(tokenized_batches)
 
@@ -287,3 +296,4 @@ def tokenize_dataset(
 
 if __name__ == "__main__":
     fire.Fire(tokenize_dataset)
+

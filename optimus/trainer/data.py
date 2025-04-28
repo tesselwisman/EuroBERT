@@ -52,16 +52,20 @@ class Data:
         self.train_streams = self.__load_data_mix(
             rf"{self.data_config.data_mix_path}/train.json"
         )
-
+        self.eval_streams = self.__load_data_mix(
+            rf"{self.data_config.data_mix_path}/eval.json"
+        )
         # Create datasets
         self.train_dataset = self.__create_dataset(self.train_streams)
-        # self.eval_dataset = self.__create_dataset(self.eval_streams, eval=True) if self.eval_streams else None
+        self.eval_dataset = self.__create_dataset(self.eval_streams, eval=True) if self.eval_streams else None
+
         config.log_print("Train dataset created successfully:", len(self.train_dataset))
 
         # Create dataloaders
         self.train_dataloader = self.__create_dataloader(self.train_dataset)
-        # self.eval_dataloader = self.__create_dataloader(self.eval_dataset) if self.eval_dataset else None
-        self.eval_dataloader = None
+        self.eval_dataloader = self.__create_dataloader(self.eval_dataset, self.eval_streams) if self.eval_dataset else None
+        config.log_print("Eval dataloader created with length", len(self.eval_dataloader))
+       #self.eval_dataloader = None
         config.log_print(
             "Train dataloader created successfully:", len(self.train_dataloader)
         )
@@ -97,7 +101,7 @@ class Data:
         return MaskingDataset(
             streams=streams,
             shuffle=False if eval else self.data_config.shuffle,
-            shuffle_seed=9176 if eval else self.data_config.seed,
+            shuffle_seed= 9176 if eval else self.data_config.seed,
             batch_size=self.data_config.batch_size,
             num_canonical_nodes=self.num_canonical_nodes,
             shuffle_block_size=int(max(4000000 // self.num_canonical_nodes, 1 << 18)),
@@ -108,7 +112,7 @@ class Data:
             tokenizer=self.tokenizer,
         )
 
-    def __create_dataloader(self, dataset: StreamingDataset) -> StreamingDataLoader:
+    def __create_dataloader(self, dataset: StreamingDataset, eval: bool = False) -> StreamingDataLoader:
         """
         Create a dataloader from the provided streams.
         Args:
@@ -119,13 +123,14 @@ class Data:
         dataloader = StreamingDataLoader(
             dataset,
             batch_size=self.data_config.batch_size,
-            num_workers=self.data_config.num_workers,
+            num_workers = self.data_config.num_workers,
             prefetch_factor=self.data_config.prefetch_factor or None,
             collate_fn=self.to_torch_collate_var_len_fn
             if self.data_config.var_len
             else self.to_torch_collate_fn,
             pin_memory=self.data_config.pin_memory,
             drop_last=True,
+            persistent_workers=False
         )
 
         dataloader._get_batch_size = MethodType(_get_batch_size, dataloader)
@@ -179,7 +184,7 @@ class Data:
             "input_ids" if self.hf_model else "x": inputs,
             "labels": labels,
             "cu_seq_lens": cu_seq_lens,
-            "max_seqlen": lengths.max().item(),
+            "max_seqlen": torch.tensor(lengths.max().item(), dtype=torch.int32),
         }
 
     # ----------------------
@@ -367,3 +372,4 @@ class SpannerPatch:
             if shard_start <= index < shard_stop:
                 return shard, int(index - shard_start.item())  # pyright: ignore
         raise RuntimeError("Internal error: shards were indexed incorrectly")
+

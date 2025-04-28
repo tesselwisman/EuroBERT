@@ -7,15 +7,26 @@ from optimus.trainer.data import Data, patch_spanner
 from optimus.trainer.distributed import Distributed
 from optimus.trainer.model.load import load_model, load_tokenizer
 from optimus.trainer.pretrain import Pretrain
+import wandb
+import os
 
+
+WANDB_API_KEY = os.environ.get("WANDB_API_KEY", "")
+WANDB_PROJECT = os.environ.get("WANDB_PROJECT", "EuroBERT-training")
+WANDB_ENTITY = os.environ.get("WANDB_ENTITY", "")
 
 @torch.distributed.elastic.multiprocessing.errors.record
 def main(**kwargs):
     # Load configurations
     config = Config(**kwargs)
-
-    # Distributed training setup
+    print(config.system)
+    if not WANDB_API_KEY:
+        print("WARNING: No WANDB api key found. This run will not be logged.")
+    if config.is_main_process:
+        wandb.login(key=WANDB_API_KEY)
+        wandb.init(project=WANDB_PROJECT, entity=WANDB_ENTITY)
     distributed = None
+
     if config.use_ddp or config.use_fsdp:
         distributed = Distributed(config)
 
@@ -58,4 +69,6 @@ def main(**kwargs):
 
 
 if __name__ == "__main__":
+    print("Running main...")
     fire.Fire(main)
+

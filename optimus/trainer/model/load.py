@@ -7,6 +7,7 @@ from transformers import (
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
     logging,
+    BertTokenizerFast
 )
 
 from optimus.trainer.configuration.configs import Config
@@ -41,11 +42,13 @@ def load_tokenizer(config: Config) -> PreTrainedTokenizer | PreTrainedTokenizerF
     """
     logging.set_verbosity_error()
     tokenizer_name = (
-        config.model.huggingface_id
-        if config.model.huggingface_id
-        else config.model.tokenizer_path_or_name
-    )
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+         config.model.tokenizer_path_or_name
+         if config.model.tokenizer_path_or_name
+         else config.model.huggingface_id
+     )
+    
+    tokenizer = (BertTokenizerFast(tokenizer_name, cls_token="<|begin-of-text|>", sep_token="<|end-of-text|>", mask_token="<|mask|>") 
+        if config.model.tokenizer_path_or_name else AutoTokenizer.from_pretrained(tokenizer_name))
 
     if tokenizer.mask_token is None:
         assert (
@@ -72,7 +75,7 @@ def load_model(config: Config):
     if config.model.huggingface_id:
         logging.set_verbosity_error()
         model = AutoModelForMaskedLM.from_pretrained(
-            config.model.huggingface_id, return_dict=False, trust_remote_code=True
+            config.model.huggingface_id, return_dict=False, trust_remote_code=True, 
         )
     else:
         if config.model.model_name == "bert":
@@ -122,3 +125,4 @@ def compile_model(model: torch.nn.Module, config: Config):
         mode=config.train.compile_mode,
         options=config.train.compile_options,
     )
+

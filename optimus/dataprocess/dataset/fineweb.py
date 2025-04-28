@@ -10,9 +10,9 @@ def get_files(path: str) -> list[str]:
 
 def get_text(file_path: str, batch_size: int = 2000) -> Iterable[list[dict[str, Any]]]:
     f = pq.ParquetFile(file_path, pre_buffer=True, buffer_size=8192)
-
+    
     def _process_record(r: dict[str, Any]) -> dict[str, Any]:
-        text = r["text"]
+        text = r["text"].replace("\n", " ")
         metadata = {"id": r["id"]}
         return {"text": text, "metadata": metadata}
 

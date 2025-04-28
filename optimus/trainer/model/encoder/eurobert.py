@@ -41,7 +41,7 @@ eurobert_config = {
         "mlp_hidden_dim": 4096,
         "bias": False,
         "rms_norm_eps": 1e-5,
-        "attn_impl": "torch",
+        "attn_impl": "flash",
         "rope_base": 10_000,
         "fused_rms_norm": False,
         "fused_rope": False,

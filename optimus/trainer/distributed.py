@@ -22,12 +22,12 @@ class Distributed:
         self.local_rank = int(os.environ.get("LOCAL_RANK", 0))
         self.rank = int(os.environ.get("RANK", 0))
         self.world_size = int(os.environ.get("WORLD_SIZE", 1))
-
+        
         self.config = config
         self.distributed_config = config.distributed
-
         dist.init_process_group(
             backend="nccl",
+
         )
         self.main_process = True if self.rank == 0 else False
 
@@ -54,7 +54,7 @@ class Distributed:
             auto_wrap_policy=self.distributed_config.wrap_policy,
             sharding_strategy=self.distributed_config.sharding_strategy,
             backward_prefetch=BackwardPrefetch.BACKWARD_PRE,
-            device_id=torch.cuda.current_device(),
+            device_id=self.local_rank,
             mixed_precision=self.distributed_config.mixed_precision,
             sync_module_states=True,
             use_orig_params=True,
@@ -87,7 +87,7 @@ class Distributed:
             device_ids=[self.local_rank],
             output_device=self.local_rank,
             find_unused_parameters=False,
-            static_graph=True,
+            static_graph=False,
         )
         timed_print("Model set up for DDP training successfully.", flush=True)
         return model
@@ -135,3 +135,4 @@ class Distributed:
         """Destroy process group, and deinitialize the distributed package."""
         dist.destroy_process_group()
         self.config.log_print("Distributed training cleaned up successfully.")
+

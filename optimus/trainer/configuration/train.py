@@ -9,9 +9,9 @@ class TrainConfig:
     output_dir: str = "output"
 
     lr: float = 1e-4
-    num_epochs: int = 1
+    num_epochs: int = 4
     clip_grad_norm: float = 1.0
-    gradient_accumulation_steps: int = 1
+    gradient_accumulation_steps: int = 4
 
     optimizer: str = "AdamW"
     weight_decay: float = 0.1
@@ -21,10 +21,10 @@ class TrainConfig:
     fused: bool | None = False
 
     lr_scheduler: str = "WarmupStableDecayLR"
-    pct_start: float = 0.01
-    div_factor: int = 0
+    pct_start: float = 0.05
+    div_factor: int = 10
     end_start: float = 0
-    final_div_factor: int = 0
+    final_div_factor: int = 100
 
     # Compilation configurations. These configurations are described in the
     # torch.compile documentation.
@@ -35,10 +35,10 @@ class TrainConfig:
 
     # Validation configurations
     run_validation: bool = True
-    validation_step: int = 5000
+    validation_step: int = 200
 
     # Save configurations
-    save_step: int = 5000
+    save_step: int = 10000
     save_model: bool = True
     save_optimizer: bool = True
     save_scheduler: bool = True
@@ -46,7 +46,7 @@ class TrainConfig:
     save_config: bool = True
 
     # Masking configurations
-    mlm_probability: float = 0.3
+    mlm_probability: float = 0.5
     mask_probability: float = 1.0
     random_probability: float = 0.0
     original_probability: float = 0.0
@@ -65,4 +65,4 @@ class TrainConfig:
     profile: bool = False
     exit_end_profiling: bool = True
     profiler_output: Literal["chrome", "tensorboard"] = "chrome"
-    log_every_n_steps: int = 10
+    log_every_n_steps: int = 25

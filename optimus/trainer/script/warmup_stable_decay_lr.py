@@ -76,7 +76,7 @@ class WarmupStableDecayLR(LRScheduler):
             self.final_lr = 0
         else:
             self.final_lr = max_lr / final_div_factor
-        super(WarmupStableDecayLR, self).__init__(optimizer, last_epoch, "deprecated")
+        super(WarmupStableDecayLR, self).__init__(optimizer, last_epoch)
 
     def get_lr(self):
         if self.last_epoch < self.warmup_iters:
@@ -87,13 +87,9 @@ class WarmupStableDecayLR(LRScheduler):
                 * (self.last_epoch + 1)
                 / self.warmup_iters
             )
-            if self.verbose:
-                print(f"Warm-up phase: Epoch {self.last_epoch}, LR {warmup_lr}")
             return [warmup_lr for _ in self.base_lrs]
         elif self.last_epoch < self.warmup_iters + self.stable_iters:
             # Stable phase
-            if self.verbose:
-                print(f"Stable phase: Epoch {self.last_epoch}, LR {self.target_lr}")
             return [self.target_lr for _ in self.base_lrs]
         else:
             # Decay phase
@@ -103,13 +99,7 @@ class WarmupStableDecayLR(LRScheduler):
                 decay_lr = (
                     self.target_lr - (self.target_lr - self.final_lr) * decay_progress
                 )
-                if self.verbose:
-                    print(f"Decay phase: Epoch {self.last_epoch}, LR {decay_lr}")
                 return [max(self.final_lr, decay_lr) for _ in self.base_lrs]
             else:
                 # No decay phase, keep stable LR
-                if self.verbose:
-                    print(
-                        f"No Decay phase: Epoch {self.last_epoch}, LR {self.target_lr}"
-                    )
                 return [self.target_lr for _ in self.base_lrs]

@@ -203,6 +203,7 @@ class SelfAttention(nn.Module, abc.ABC):
         self.flash = flash
         if self.flash:
             assert FLASH_ATTN_AVAILABLE, "Flash attention is not installed"
+        print("Using flash!")
 
         num_proj = num_heads + 2 * num_kv_heads
         self.qkv_proj = nn.Linear(embed_dim, num_proj * head_dim, bias=bias)

@@ -1,12 +1,14 @@
 import contextlib
 import os
 import time
+import wandb
 from contextlib import nullcontext
 from typing import Generator, Optional
 
 import torch
 import torch.distributed as dist
 from torch.utils.tensorboard import SummaryWriter
+
 
 from optimus.trainer.script.cache import Cache
 from optimus.trainer.script.warmup_stable_decay_lr import WarmupStableDecayLR
@@ -96,6 +98,7 @@ class Pretrain:
         Launch the training loop.
         """
         # Set up profiling and mixed precision context managers
+        print("Data can have var_len:", self.config.data.var_len)
         profiler = (
             self.profiler()
             if self.train_config.profile and self.main_process
@@ -122,100 +125,119 @@ class Pretrain:
         start_time = time.time()
 
         with profiler as prof:
-            for i, batch in enumerate(self.data.train_dataloader, start=1):
-                # First batch processing
-                if self.pre_batch_step(i, skip_threshold):
-                    continue
+            for epoch in range(self.train_config.num_epochs):
+                for i, batch in enumerate(self.data.train_dataloader, start=1):
+                    # First batch processing
+                    if self.pre_batch_step(i, skip_threshold):
+                        continue
 
-                # No sync context manager for gradient accumulation
-                no_sync = (
-                    self.model.no_sync()
-                    if i % self.config.train.gradient_accumulation_steps != 0
-                    else nullcontext()
-                )
+                    # No sync context manager for gradient accumulation
+                    no_sync = (
+                        self.model.no_sync()
+                        if i % self.config.train.gradient_accumulation_steps != 0
+                        else nullcontext()
+                    )
+                    total_masked_tokens = 0
+                    correct_predictions = 0
+                    with no_sync:
+                        with autocast:
+                            if self.config.model.huggingface_id:
+                                batch = {
+                                    key: value.to(device=self.model.device)
+                                    for key, value in batch.items()
+                                }
+                                loss, logits = self.model(**batch)
+                            else:
+                                logits, loss = self.model(**batch, cache=self.cache)
+                            loss = loss / self.config.train.gradient_accumulation_steps
+                        loss.backward()
+                    labels = batch["labels"].to(device=self.model.device).contiguous()
+                    total_loss += loss.detach().item()
+                    predictions = torch.argmax(logits, dim=-1)
+                    mask = labels!= -100 #self.config.model.mask_token_id
+                    correct_predictions += (predictions[mask] == labels[mask]).sum().item()
+            
+                    total_masked_tokens += mask.sum().item()
+                    accuracy = correct_predictions / total_masked_tokens if total_masked_tokens > 0 else 0.0
 
-                with no_sync:
-                    with autocast:
-                        if self.config.model.huggingface_id:
-                            batch = {
-                                key: value.to(device=self.model.device)
-                                for key, value in batch.items()
-                            }
-                            loss, _ = self.model(**batch)
-                        else:
-                            _, loss = self.model(**batch, cache=self.cache)
-                        loss = loss / self.config.train.gradient_accumulation_steps
-                    loss.backward()
-                total_loss += loss.detach().item()
-                self.scheduler.step()
+                    self.scheduler.step()
 
-                # Training step
-                if i % self.train_config.gradient_accumulation_steps == 0 or i == len(
-                    self.data.train_dataloader
-                ):
-                    grad_norm = self.clip_grad_norm_(self.train_config.clip_grad_norm)
-
-                    self.optimizer.step()
-                    self.optimizer.zero_grad()
-                    self.step += 1
-
-                    end_time = time.time()
-                    if self.main_process:
-                        self.config.log_print(
-                            f"Step: {self.step}",
-                            f"Loss: {total_loss:.4f}",
-                            f"Tokens/s: {(self.tokens_per_step / (end_time - start_time)):.2f}",
-                            f"Time/step (s): {(end_time - start_time):.2f}",
-                            f"Learning rate: {self.scheduler.get_last_lr()[0]}",
-                            f"Grad norm: {grad_norm:.4f}",
-                        )
-
-                    if (
-                        self.train_config.tensorboard
-                        and self.main_process
-                        and self.step % self.train_config.log_every_n_steps == 0
-                    ):
-                        self.writer.add_scalar("Loss/train", total_loss, self.step)
-                        self.writer.add_scalar("Gradient norm", grad_norm, self.step)
-                        self.writer.add_scalar(
-                            "Learning rate", self.scheduler.get_last_lr()[0], self.step
-                        )
-                        self.writer.add_scalar(
-                            "Time/step in seconde", end_time - start_time, self.step
-                        )
-                        self.writer.add_scalar(
-                            "Tokens seen", self.tokens_per_step * self.step, self.step
-                        )
-                        self.writer.add_scalar(
-                            "Tokens seen/second",
-                            self.tokens_per_step / (end_time - start_time),
-                            self.step,
-                        )
-
-                    # Validation
-                    if self.train_config.run_validation & (
-                        self.step % self.train_config.validation_step == 0
-                    ):
-                        if self.data.eval_dataloader is not None:
-                            self.eval()
-
-                    # Save model and other states
-                    if self.step % self.train_config.save_step == 0 or i == len(
+                    # Training step
+                    if i % self.train_config.gradient_accumulation_steps == 0 or i == len(
                         self.data.train_dataloader
                     ):
-                        self.save()
-                        self.config.log_print(
-                            f"Remaining steps: {(len(self.data.train_dataloader) - i)/self.train_config.gradient_accumulation_steps}"
-                        )
+                        grad_norm = self.clip_grad_norm_(self.train_config.clip_grad_norm)
 
-                    # Profiling
-                    if isinstance(prof, torch.profiler.profile) and self.main_process:
-                        prof.step()
-                        if prof.step_num == 20 and self.train_config.exit_end_profiling:
-                            break
+                        self.optimizer.step()
+                        self.optimizer.zero_grad()
+                        self.step += 1
 
-                    start_time = end_time
-                    total_loss = 0
+                        end_time = time.time()
+                        if self.main_process:
+                            self.config.log_print(
+                                f"Epoch: {epoch}",
+                                f"Step: {self.step}",
+                                f"Loss: {total_loss:.4f}",
+                                f"Tokens/s: {(self.tokens_per_step / (end_time - start_time)):.2f}",
+                                f"Time/step (s): {(end_time - start_time):.2f}",
+                                f"Learning rate: {self.scheduler.get_last_lr()[0]}",
+                                f"Grad norm: {grad_norm:.4f}",
+                                f"Accuracy: {accuracy:.4f}",
+                            )
+                        if self.main_process and self.step % self.train_config.log_every_n_steps == 0:
+                            wandb.log({"Loss/train":total_loss, "Grad norm":grad_norm, "Accuracy/train":accuracy})
+
+                        if (
+                            self.train_config.tensorboard
+                            and self.main_process
+                            and self.step % self.train_config.log_every_n_steps == 0
+                        ):
+                            self.writer.add_scalar("Loss/train", total_loss, self.step)
+                            self.writer.add_scalar("Gradient norm", grad_norm, self.step)
+                            self.writer.add_scalar(
+                                "Learning rate", self.scheduler.get_last_lr()[0], self.step
+                            )
+                            self.writer.add_scalar(
+                                "Time/step in seconds", end_time - start_time, self.step
+                            )
+                            self.writer.add_scalar(
+                                "Tokens seen", self.tokens_per_step * self.step, self.step
+                            )
+                            self.writer.add_scalar(
+                                "Tokens seen/second",
+                                self.tokens_per_step / (end_time - start_time),
+                                self.step,
+                            )
+                            self.writer.add_scalar(
+                                "Accuracy",
+                                accuracy, self.step,
+                            )
+
+                        # Validation
+                        if self.train_config.run_validation & (
+                            self.step % self.train_config.validation_step == 0
+                        ):
+                            if self.data.eval_dataloader is not None:
+                                self.config.log_print("Running evaluation...")
+                                self.eval()
+
+                        # Save model and other states
+                        if self.step % self.train_config.save_step == 0 or i == len(
+                            self.data.train_dataloader
+                        ):
+                            self.save()
+                            self.config.log_print(
+                                f"Remaining steps: {(len(self.data.train_dataloader) - i)/self.train_config.gradient_accumulation_steps}"
+                            )
+
+                        # Profiling
+                        if isinstance(prof, torch.profiler.profile) and self.main_process:
+                            prof.step()
+                            if prof.step_num == 20 and self.train_config.exit_end_profiling:
+                                break
+
+                        start_time = end_time
+                        total_loss = 0
 
     def eval(self):
         """
@@ -224,25 +246,43 @@ class Pretrain:
         autocast = (
             torch.autocast(device_type="cuda", dtype=torch.bfloat16)
             if self.train_config.mixed_bfloat16 and not self.train_config.fsdp
-            else nullcontext
+            else nullcontext()
         )
         self.model.eval()
-
         loss = 0
+        correct_predictions = 0
+        total_masked_tokens = 0
         for batch in self.data.eval_dataloader:
-            input_ids = batch["input_ids"].to(device=self.model.device).contiguous()
+            if self.config.model.huggingface_id:
+                input_ids = batch["input_ids"].to(device=self.model.device).contiguous()
+            else:
+                input_ids = batch["x"].to(device=self.model.device).contiguous()
             labels = batch["labels"].to(device=self.model.device).contiguous()
 
             with torch.no_grad():
                 with autocast:
-                    _, loss = self.model(input_ids, labels=labels, cache=self.cache)
-
+                    if self.config.model.huggingface_id:
+                        batch_loss, logits  = self.model(input_ids, labels=labels)
+                    else:
+                        logits, batch_loss  = self.model(input_ids, labels=labels, cache=self.cache) # REMOVE: cache and reverse loss, output params for EuroBertForMaskedLM class
+                    loss += batch_loss
+        
+                    predictions = torch.argmax(logits, dim=-1)
+                    mask = labels != -100
+                    correct_predictions += (predictions[mask] == labels[mask]).sum().item()
+            
+                    total_masked_tokens += mask.sum().item()
+        accuracy = correct_predictions / total_masked_tokens if total_masked_tokens > 0 else 0.0
         loss /= len(self.data.eval_dataloader)
         if self.train_config.fsdp or self.train_config.ddp:
             dist.all_reduce(loss, op=dist.ReduceOp.AVG)
         if self.train_config.tensorboard and self.main_process:
-            self.writer.add_scalar("Loss/eval", loss, self.step)
-            print("Validation loss:", loss.item())
+            self.writer.add_scalar("Loss/eval", loss.detach(), self.step)
+            print("Validation loss:", loss.detach().item())
+        if self.main_process:
+            wandb.log({"Loss/eval":loss.detach().item()})
+            wandb.log({"Accuracy/eval":accuracy})
+
         self.model.train()
 
     # ----------------------
@@ -259,14 +299,7 @@ class Pretrain:
         self.config.log_print(f"Saving checkpoint at path: {path}")
 
         if self.train_config.save_model:
-            if self.train_config.fsdp:
-                assert (
-                    self.train_config.save_optimizer
-                ), "FSDP requires saving the optimizer with the model."
-                self.distributed.save_fsdp_model_optimizer(
-                    self.model, self.optimizer, path
-                )
-            elif self.main_process:
+            if self.main_process:
                 if self.train_config.ddp:
                     torch.save(self.model.module.state_dict(), path + "model.pt")
                 else:
@@ -492,3 +525,4 @@ class Pretrain:
             with_flops=True,
         ) as prof:
             yield prof
+
