@@ -20,11 +20,12 @@ def main(**kwargs):
     # Load configurations
     config = Config(**kwargs)
     print(config.system)
-    if not WANDB_API_KEY:
-        print("WARNING: No WANDB api key found. This run will not be logged.")
-    if config.is_main_process:
-        wandb.login(key=WANDB_API_KEY)
-        wandb.init(project=WANDB_PROJECT, entity=WANDB_ENTITY)
+    if config.train.wandb:
+        if not WANDB_API_KEY:
+            print("WARNING: No WANDB api key found. This run will not be logged.")
+        if config.is_main_process:
+            wandb.login(key=WANDB_API_KEY)
+            wandb.init(project=WANDB_PROJECT, entity=WANDB_ENTITY)
     distributed = None
 
     if config.use_ddp or config.use_fsdp:

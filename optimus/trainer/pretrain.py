@@ -184,7 +184,7 @@ class Pretrain:
                                 f"Grad norm: {grad_norm:.4f}",
                                 f"Accuracy: {accuracy:.4f}",
                             )
-                        if self.main_process and self.step % self.train_config.log_every_n_steps == 0:
+                        if self.train_config.wandb and self.main_process and self.step % self.train_config.log_every_n_steps == 0:
                             wandb.log({"Loss/train":total_loss, "Grad norm":grad_norm, "Accuracy/train":accuracy})
 
                         if (
@@ -279,7 +279,7 @@ class Pretrain:
         if self.train_config.tensorboard and self.main_process:
             self.writer.add_scalar("Loss/eval", loss.detach(), self.step)
             print("Validation loss:", loss.detach().item())
-        if self.main_process:
+        if self.train_config.wandb and self.main_process:
             wandb.log({"Loss/eval":loss.detach().item()})
             wandb.log({"Accuracy/eval":accuracy})
 

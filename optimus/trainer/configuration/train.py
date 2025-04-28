@@ -62,6 +62,7 @@ class TrainConfig:
     mixed_bfloat16: bool = True
     seed: int = 42
     tensorboard: bool = True
+    wandb: bool = True
     profile: bool = False
     exit_end_profiling: bool = True
     profiler_output: Literal["chrome", "tensorboard"] = "chrome"

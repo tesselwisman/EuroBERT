@@ -119,10 +119,11 @@ def _worker(
     get_records_fn: GetRecordsFunc,
     head: Optional[int] = None,
     tiktoken: bool = False,
+    bert_tokenizer: bool = False,
 ):
     if tiktoken:
         tokenizer = Llama3TiktokenTokenizer(tokenizer_path)
-    elif tokenizer_paths.endswith("vocab.txt"):
+    elif bert_tokenizer:
         tokenizer = BertTokenizerFast(tokenizer_path, cls_token="<|begin-of-text|>", sep_token="<|end-of-text|>", mask_token="<|mask|>")
     else:
         AutoTokenizer.from_pretrained(tokenizer_path)
@@ -136,7 +137,7 @@ def _worker(
         if tiktoken:
             eos_id = tokenizer.eos_id
             return [ids + [eos_id] for ids in input_ids]
-        elif tokenizer_path.endswith("vocab.txt"):
+        elif bert_tokenizer:
             eos_id = tokenizer.sep_token_id
         else:
             eos_id = tokenizer.eos_token_id
@@ -201,6 +202,7 @@ def tokenize_dataset(
     head: Optional[int] = None,
     timeout: Optional[int] = None,
     tiktoken: bool = False,
+    bert_tokenizer: bool = False,
     read_files_kwargs: Optional[dict[str, Any]] = None,
 ):
     """
@@ -268,6 +270,7 @@ def tokenize_dataset(
                 dataset_module.get_text,
                 head,
                 tiktoken,
+                bert_tokenizer
             )
             for i, subset in enumerate(input_subset)
         ]

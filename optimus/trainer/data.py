@@ -52,23 +52,26 @@ class Data:
         self.train_streams = self.__load_data_mix(
             rf"{self.data_config.data_mix_path}/train.json"
         )
-        self.eval_streams = self.__load_data_mix(
-            rf"{self.data_config.data_mix_path}/eval.json"
-        )
-        # Create datasets
         self.train_dataset = self.__create_dataset(self.train_streams)
-        self.eval_dataset = self.__create_dataset(self.eval_streams, eval=True) if self.eval_streams else None
 
         config.log_print("Train dataset created successfully:", len(self.train_dataset))
 
         # Create dataloaders
         self.train_dataloader = self.__create_dataloader(self.train_dataset)
-        self.eval_dataloader = self.__create_dataloader(self.eval_dataset, self.eval_streams) if self.eval_dataset else None
-        config.log_print("Eval dataloader created with length", len(self.eval_dataloader))
-       #self.eval_dataloader = None
+
         config.log_print(
             "Train dataloader created successfully:", len(self.train_dataloader)
         )
+        try:
+            self.eval_streams = self.__load_data_mix(
+                rf"{self.data_config.data_mix_path}/eval.json"
+            )
+            self.eval_dataset = self.__create_dataset(self.eval_streams, eval=True) if self.eval_streams else None
+            self.eval_dataloader = self.__create_dataloader(self.eval_dataset, self.eval_streams) if self.eval_dataset else None
+            config.log_print("Eval dataloader created with length", len(self.eval_dataloader))
+        except Exception:
+            config.log_print("Evaluation data could not be loaded. If you expect data to be present, check your eval.json")
+            self.eval_dataloader = None
 
         config.log_print(
             f"Masking probabilities: MLM={config.train.mlm_probability}, Mask={config.train.mask_probability}, Random={config.train.random_probability}, Original={config.train.original_probability}"

@@ -7,6 +7,7 @@ class ModelConfig:
         None  # Huggingface model id (if provided, other model parameters are ignored)
     )
     tokenizer_path_or_name: str = "meta-llama/Meta-Llama-3-8B-Instruct"
+    bert_tokenizer: bool = False,
     mask_token_id: int = 128002
     gpu: bool = True
 

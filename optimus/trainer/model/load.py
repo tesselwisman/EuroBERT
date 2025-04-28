@@ -48,7 +48,7 @@ def load_tokenizer(config: Config) -> PreTrainedTokenizer | PreTrainedTokenizerF
      )
     
     tokenizer = (BertTokenizerFast(tokenizer_name, cls_token="<|begin-of-text|>", sep_token="<|end-of-text|>", mask_token="<|mask|>") 
-        if config.model.tokenizer_path_or_name else AutoTokenizer.from_pretrained(tokenizer_name))
+        if config.model.bert_tokenizer else AutoTokenizer.from_pretrained(tokenizer_name))
 
     if tokenizer.mask_token is None:
         assert (
